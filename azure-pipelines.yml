@@ -10,13 +10,13 @@ steps:
   displayName: 'dotnet test'
   inputs:
     command: 'test'
-    projects: 'test/DFEngine.Core.UnitTests/DFEngine.Core.UnitTests.csproj'
+    projects: 'test/DFEngine.Graph.UnitTests/DFEngine.Graph.UnitTests.csproj'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'
   inputs:
     command: 'pack'
-    packagesToPack: 'src/DFEngine.Core/DFEngine.Core.csproj'
+    packagesToPack: 'src/DFEngine.Graph/DFEngine.Graph.csproj'
     packDirectory: '$(Build.ArtifactStagingDirectory)'
     versioningScheme: 'byPrereleaseNumber'
     majorVersion: '0'
