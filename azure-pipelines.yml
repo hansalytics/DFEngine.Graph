@@ -19,13 +19,13 @@ steps:
     packagesToPack: 'src/DFEngine.Graph/DFEngine.Graph.csproj'
     packDirectory: '$(Build.ArtifactStagingDirectory)'
     versioningScheme: 'byPrereleaseNumber'
-    majorVersion: '0'
-    minorVersion: '2'
+    majorVersion: '1'
+    minorVersion: '0'
     patchVersion: '0'
-          
+
 - task: NuGetCommand@2
   inputs:
     command: 'push'
-    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-    nuGetFeedType: 'internal'
-    publishVstsFeed: '/046a240b-6c64-42c5-afa4-370eb3c1c04a'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+    nuGetFeedType: 'external'
+    publishFeedCredentials: 'nuget.org'
