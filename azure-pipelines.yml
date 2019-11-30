@@ -6,11 +6,12 @@ pool:
 
 steps:
 
-# - task: DotNetCoreCLI@2
-#   displayName: 'dotnet test'
-#   inputs:
-#     command: 'test'
-#     projects: 'test/DFEngine.Graph.UnitTests/DFEngine.Graph.UnitTests.csproj'
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet test'
+  inputs:
+     command: 'test'
+     projects: 'test/DFEngine.Graph.UnitTests/DFEngine.Graph.UnitTests.csproj'
+     testRunTitle: 'Run UnitTests'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet pack'
