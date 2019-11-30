@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace DFEngine.Graph.Models.MergeProcessor
@@ -11,25 +9,21 @@ namespace DFEngine.Graph.Models.MergeProcessor
     /// </summary>
     public class MergeProcessor
     {
-        MergeProcessorState state;
-        Queue<Graph> queue;
-        readonly object queueSync;
-        readonly int amountThreads;
-        readonly Queue<Worker> threadPool;
-        readonly object threadPoolSync;
+        internal MergeProcessorState state;
+        internal Queue<Graph> queue;
+        internal readonly object enqueueSync;
+        readonly int threadsAvailable;
+        readonly Queue<Task> taskPool;
+        readonly object taskPoolSync;
 
         public MergeProcessor()
         {
             state = MergeProcessorState.AWAITING_TASKS;
             queue = new Queue<Graph>();
-            queueSync = new object();
-            amountThreads = Environment.ProcessorCount;
-            threadPool = new Queue<Worker>();
-            threadPoolSync = new object();
-            for (int index = 0; index < amountThreads; index++)
-            {
-                threadPool.Enqueue(new Worker());
-            }
+            enqueueSync = new object();
+            threadsAvailable = (int)Math.Round((double)Environment.ProcessorCount / 2);
+            taskPool = new Queue<Task>();
+            taskPoolSync = new object();
         }
 
         /// <summary>
@@ -39,41 +33,18 @@ namespace DFEngine.Graph.Models.MergeProcessor
         {
             state = MergeProcessorState.FINISHED;
 
-            return await Task.Run(() =>
+            while(taskPool.Count > 0)
             {
-                while (true)
-                {
-                    Thread.Sleep(10);
+                var task = taskPool.Dequeue();
+                await task;
+            }
 
-                    int graphsInQueue;
-                    int waitingThreads;
-
-                    lock (queueSync)
-                    {
-                        graphsInQueue = queue.Count;
-                    }
-                    lock (threadPoolSync)
-                    {
-                        waitingThreads = threadPool.Count;
-                    }
-
-                    //All threads have finished and theres exactly one graph left in the queue. The merging process is considered to be finished
-                    if (graphsInQueue == 1 && waitingThreads == amountThreads)
-                    {
-                        Graph finalGraph;
-
-                        lock (queueSync)
-                        {
-                            finalGraph = queue.Dequeue();
-                        }
-
-                        return finalGraph;
-                    }
-
-                    if (graphsInQueue == 0 && waitingThreads == amountThreads)
-                        return new Graph();
-                }
-            });
+            if (queue.Count == 0)
+                return new Graph();
+            if(queue.Count == 1)
+                return queue.Dequeue();
+            else
+                throw new InvalidOperationException("WTF");
         }
 
         /// <summary>
@@ -84,28 +55,21 @@ namespace DFEngine.Graph.Models.MergeProcessor
             if (state.Equals(MergeProcessorState.FINISHED))
                 throw new InvalidOperationException("Can't queue new elements. Make sure not to add elements after calling 'GetFinalResult()'!");
 
-            Worker nextWorker = null;
-            Graph nextGraph_01 = null;
-            Graph nextGraph_02 = null;
-
-            lock (queueSync)
+            lock (enqueueSync)
             {
                 queue.Enqueue(newGraph);
-
-                lock (threadPoolSync)
-                {
-                    if (queue.Count >= 2 && threadPool.Count > 0)
-                    {
-                        nextGraph_01 = queue.Dequeue();
-                        nextGraph_02 = queue.Dequeue();
-
-                        nextWorker = threadPool.Dequeue();
-                    }
-                }
             }
 
-            if (nextWorker != null)
-                nextWorker.Run(this, nextGraph_01, nextGraph_02);
+            lock (taskPoolSync)
+            {
+                if (queue.Count >= 2 && taskPool.Count < threadsAvailable)
+                {
+                    Graph nextGraph_01 = queue.Dequeue();
+                    Graph nextGraph_02 = queue.Dequeue();
+
+                    taskPool.Enqueue(Worker.Run(this, nextGraph_01, nextGraph_02));
+                }
+            }      
         }
 
         /// <summary>
@@ -113,43 +77,9 @@ namespace DFEngine.Graph.Models.MergeProcessor
         /// </summary>
         public void Reset()
         {
+            _ = GetFinalResult().Result;
             state = MergeProcessorState.AWAITING_TASKS;
             queue = new Queue<Graph>();
-        }
-
-        /// <summary>
-        /// Gets called by the workers. Their result gets enqueued and the worker is assigned new graphs again if available.
-        /// If not they get staged into the threadpool again
-        /// </summary>
-        /// <param name="worker">The calle</param>
-        /// <param name="graph">The merge result of the calling worker</param>
-        internal void NotifyReady(Worker worker, Graph graph)
-        {
-            bool anotherRound = false;
-            Graph nextGraph_01 = null;
-            Graph nextGraph_02 = null;
-
-            lock (queueSync)
-            {
-                queue.Enqueue(graph);
-
-                if (queue.Count >= 2)
-                {
-                    nextGraph_01 = queue.Dequeue();
-                    nextGraph_02 = queue.Dequeue();
-                    anotherRound = true;
-                }
-            }
-
-            if (anotherRound)
-                worker.Run(this, nextGraph_01, nextGraph_02);
-            else
-            {
-                lock (threadPoolSync)
-                {
-                    threadPool.Enqueue(worker);
-                }
-            }
         }
     }
 }

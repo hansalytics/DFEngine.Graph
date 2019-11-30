@@ -147,6 +147,8 @@ namespace DFEngine.Graph.Models
                 foreach (var edge in adjacentGroup.Value.Edges)
                     AddEdge(edge.Value);
             }
+
+            secondGraph.Invalidate();
         }
     }
 }
