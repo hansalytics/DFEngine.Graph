@@ -41,10 +41,10 @@ namespace DFEngine.Graph.Models.MergeProcessor
 
             if (queue.Count == 0)
                 return new Graph();
-            if(queue.Count == 1)
+            if (queue.Count == 1)
                 return queue.Dequeue();
             else
-                throw new InvalidOperationException("WTF");
+                throw new Exception("Final result could not be determined");
         }
 
         /// <summary>
