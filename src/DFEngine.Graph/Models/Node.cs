@@ -49,7 +49,7 @@ namespace DFEngine.Graph.Models
             ReplacedBy = null;
             Parent = null;
             Id = Guid.NewGuid();
-            Name = name;
+            Name = string.IsNullOrEmpty(name) ? String.Empty : name;
             NodeClass = nodeClass.ToLower();
             Unique = unique;
             ChildNodes = new Dictionary<int, Node>();
