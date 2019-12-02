@@ -52,6 +52,9 @@ namespace DFEngine.Graph.Models.MergeProcessor
         /// </summary>
         public void Queue(Graph newGraph)
         {
+            if (newGraph == null)
+                throw new ArgumentNullException("Graph may not be null");
+
             if (state.Equals(MergeProcessorState.FINISHED))
                 throw new InvalidOperationException("Can't queue new elements. Make sure not to add elements after calling 'GetFinalResult()'!");
 
@@ -60,16 +63,26 @@ namespace DFEngine.Graph.Models.MergeProcessor
                 queue.Enqueue(newGraph);
             }
 
-            lock (taskPoolSync)
+            Task workerTask = null;
+
+            lock (enqueueSync)
             {
                 if (queue.Count >= 2 && taskPool.Count < threadsAvailable)
                 {
                     Graph nextGraph_01 = queue.Dequeue();
                     Graph nextGraph_02 = queue.Dequeue();
 
-                    taskPool.Enqueue(Worker.Run(this, nextGraph_01, nextGraph_02));
+                    workerTask = new Worker().Run(this, nextGraph_01, nextGraph_02);
                 }
-            }      
+            }
+
+            if (workerTask != null)
+            {
+                lock (taskPoolSync)
+                {
+                    taskPool.Enqueue(workerTask);
+                }
+            }
         }
 
         /// <summary>

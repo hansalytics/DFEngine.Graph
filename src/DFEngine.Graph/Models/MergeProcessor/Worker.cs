@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace DFEngine.Graph.Models.MergeProcessor
 {
-    static class Worker
+    class Worker
     {
         /// <summary>
         /// Runs a task of merging two graphs until its interrupted by its processor
@@ -14,7 +14,7 @@ namespace DFEngine.Graph.Models.MergeProcessor
         /// <param name="graph_01">The initial first graph this task is started with</param>
         /// <param name="graph_02">The initial second graph this task is started with</param>
         /// <returns>The task</returns>
-        internal static Task Run(MergeProcessor processor, Graph graph_01, Graph graph_02)
+        internal Task Run(MergeProcessor processor, Graph graph_01, Graph graph_02)
         {
             bool anotherRound = true;
             Graph nextGraph_01 = graph_01;
@@ -40,6 +40,9 @@ namespace DFEngine.Graph.Models.MergeProcessor
                         {
                             nextGraph_01 = processor.queue.Dequeue();
                             nextGraph_02 = processor.queue.Dequeue();
+
+                            if (nextGraph_02 == null)
+                                throw new InvalidOperationException("WTF");
                             anotherRound = true;
                         }
                         else

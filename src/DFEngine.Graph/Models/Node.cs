@@ -46,10 +46,16 @@ namespace DFEngine.Graph.Models
 
         public Node(string name, string nodeClass, bool unique = true)
         {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentNullException("A node must have a valid name");
+
+            if (string.IsNullOrEmpty(nodeClass))
+                throw new ArgumentNullException("A node must have a valid class name");
+
             ReplacedBy = null;
             Parent = null;
             Id = Guid.NewGuid();
-            Name = string.IsNullOrEmpty(name) ? String.Empty : name;
+            Name = name;
             NodeClass = nodeClass.ToLower();
             Unique = unique;
             ChildNodes = new Dictionary<int, Node>();

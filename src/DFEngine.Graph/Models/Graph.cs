@@ -128,6 +128,9 @@ namespace DFEngine.Graph.Models
         /// after this operation</param>
         internal void Merge(Graph secondGraph)
         {
+            if(secondGraph == null)
+                throw new ArgumentNullException("Second graph may not be null");
+
             if (!Valid || !secondGraph.Valid)
                 throw new InvalidOperationException("Unable to merge graphs that are declared as invalid");
 
